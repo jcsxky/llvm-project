@@ -10,6 +10,8 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include "clang/AST/Decl.h"
+#include "clang/AST/DeclCXX.h"
 #include "clang/AST/RecordLayout.h"
 #include "clang/ASTMatchers/ASTMatchers.h"
 #include "llvm/ADT/StringMap.h"
@@ -9016,6 +9018,25 @@ TEST_P(ASTImporterOptionSpecificTestBase, VaListCpp) {
 
   ASSERT_TRUE(ToAST->getASTContext().hasSameType(
       ToVaList->getUnderlyingType(), ToBuiltinVaList->getUnderlyingType()));
+}
+
+TEST_P(ASTImporterOptionSpecificTestBase, LambdaReturnWithStructInside) {
+  Decl *From, *To;
+  std::tie(From, To) = getImportedDecl(
+      R"(
+      void foo() {
+        (void) []() {
+          struct X {};
+          return X();
+        };
+      }
+      )",
+      Lang_CXX11, "", Lang_CXX11, "foo");
+  auto *ToLambda = FirstDeclMatcher<LambdaExpr>().match(To, lambdaExpr());
+  auto *RecordX = FirstDeclMatcher<RecordDecl>().match(To, recordDecl(hasName("X")));
+  auto *OverloadBraceMethodDecl = FirstDeclMatcher<CXXMethodDecl>().match(To, cxxMethodDecl(hasOverloadedOperatorName("()")));
+  EXPECT_TRUE(ToLambda);
+  EXPECT_TRUE(OverloadBraceMethodDecl->getReturnType()->getAsRecordDecl() == RecordX);
 }
 
 TEST_P(ASTImporterOptionSpecificTestBase,

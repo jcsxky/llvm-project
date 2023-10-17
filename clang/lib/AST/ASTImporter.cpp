@@ -3578,13 +3578,9 @@ bool ASTNodeImporter::hasAutoReturnTypeDeclaredInside(FunctionDecl *D) {
   assert(FromFPT && "Must be called on FunctionProtoType");
 
   QualType RetT = FromFPT->getReturnType();
-  if (isa<AutoType>(RetT.getTypePtr())) {
-    FunctionDecl *Def = D->getDefinition();
-    IsTypeDeclaredInsideVisitor Visitor(Def ? Def : D);
-    return Visitor.CheckType(RetT);
-  }
-
-  return false;
+  FunctionDecl *Def = D->getDefinition();
+  IsTypeDeclaredInsideVisitor Visitor(Def ? Def : D);
+  return Visitor.CheckType(RetT);
 }
 
 ExplicitSpecifier
