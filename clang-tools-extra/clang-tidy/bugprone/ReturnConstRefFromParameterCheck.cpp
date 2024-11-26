@@ -18,14 +18,17 @@ namespace clang::tidy::bugprone {
 void ReturnConstRefFromParameterCheck::registerMatchers(MatchFinder *Finder) {
   const auto DRef = ignoringParens(
       declRefExpr(
-          to(parmVarDecl(hasType(hasCanonicalType(
-                             qualType(lValueReferenceType(pointee(
-                                          qualType(isConstQualified()))))
-                                 .bind("type"))))
+          to(parmVarDecl(
+                 hasType(hasCanonicalType(
+                     qualType(lValueReferenceType(
+                                  pointee(qualType(isConstQualified()))))
+                         .bind("type"))),
+                 hasDeclContext(functionDecl().bind("owner")))
                  .bind("param")))
           .bind("dref"));
   const auto Func =
-      functionDecl(hasReturnTypeLoc(loc(
+      functionDecl(equalsBoundNode("owner"),
+                   hasReturnTypeLoc(loc(
                        qualType(hasCanonicalType(equalsBoundNode("type"))))))
           .bind("func");
 
